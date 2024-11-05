@@ -1,0 +1,217 @@
+---
+title: "wormsmerged_mergeddata_maybe"
+author: "Lynndsay Terpsma"
+date: "2024-07-26"
+output: html_document
+---
+
+```{r load packages, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(naniar)
+library(skimr)
+library(broom)
+library(googlesheets4)
+library(stats)
+library(jtools)
+library(ggstance)
+library(arm)
+library(pscl)
+library(lme4)
+library(car)
+```
+
+```{r}
+wormsmerged <- read_csv("C:/Users/lterp/Desktop/OneDrive - UBC/2024S/Project/Statistics/Data/worm_merged.csv")
+```
+```{r}
+glimpse(wormsmerged)
+```
+```{r}
+worms <- wormsmerged %>%
+  mutate(testing_group = recode_factor(testing_group, 
+                                       A1 = "A", A2 = "A", A3 = "A", 
+                                       B1 = "B", B2 = "B", B3 = "B", 
+                                       D1 = "D", D2 = "D", D3 = "D"))
+
+worms
+```
+
+```{r}
+wormsmerged %>%
+  ggplot(aes(x = testing_group, y = CR_CE_time)) +
+  geom_jitter(colour = "darkgrey", size = 3, shape = 1, width = 0.1) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", 
+    colour = "black", width = 0.1, 
+    position = position_nudge(x = 0.15)) +
+  stat_summary(fun = mean, geom = "point", 
+    colour = "black", size = 3, 
+    position = position_nudge(x = 0.15)) +
+  xlab("Sediment treatment") + 
+  ylab("Time to re-emerge (s)") + 
+  theme_classic()
+```
+
+```{r}
+wormsmerged %>%
+  ggplot(aes(x = CR_CE_time)) +
+  geom_histogram(binwidth = 0.5, colour = "black", fill = "lightgrey", boundary = 0, closed = "left") +
+   xlab("re-emergence time (s)") +
+  ylab("frequency") +
+  theme_bw()
+```
+
+```{r}
+wormsmerged %>% 
+ ggplot(aes(sample = CR_CE_time)) +
+  stat_qq(shape = 1, size = 2) +
+  stat_qq_line() +
+  ylab("re-emergence") +
+  xlab("Normal quantile") +
+  theme_bw()
+```
+```{r}
+poisson <- glm(CR_CE_time ~ testing_group, wormsmerged, family = poisson(link = "log"))
+summary(poisson)
+```
+```{r}
+poisson2 <- glm(CR_CE_time ~ testing_group, wormsmerged, family = quasipoisson(link = "log"))
+summary(poisson2)
+```
+```{r}
+coef1 = coef(poisson)
+coef2 = coef(poisson2)
+se.coef1 = se.coef(poisson)
+se.coef2 = se.coef(poisson2)
+models.both <- cbind(coef1, se.coef1, coef2, se.coef2, exponent = exp(coef1))
+models.both
+```
+```{r}
+plot_summs(poisson,poisson2, scale = TRUE, exp = TRUE)
+```
+
+```{r}
+model <- glm(CR_CE_time ~ testing_group, family = poisson(), data = wormsmerged)
+summary(model)
+```
+```{r}
+overdispersion <- sum(residuals(model, type = "pearson")^2) / model$df.residual
+print(overdispersion)
+```
+```{r}
+model_nb <- glm.nb(CR_CE_time ~ testing_group, data = wormsmerged)
+summary(model_nb)
+```
+
+```{r}
+model_zip <- zeroinfl(CR_CE_time ~ testing_group | testing_group, data = wormsmerged, dist = "poisson")
+summary(model_zip)
+```
+```{r}
+cat("AIC for poisson model:", AIC(poisson), "\n")
+cat("AIC for ZIP model:", AIC(model_zip), "\n")
+```
+```{r}
+plot(fitted(model_zip), residuals(model_zip),
+     xlab = "fitted values", ylab = "residuals",
+     main = "residuals vs fitten (ZIP)")
+abline(h = 0, col = "red")
+```
+nope
+
+```{r}
+qqnorm(residuals(model_zip))
+qqline(residuals(model_zip), col = "Red")
+```
+nope
+
+```{r}
+sum(wormsmerged$CR_CE_time <= 0)
+```
+
+```{r}
+model <- lmer(CR_CE_time ~ (1 | testing_group), data = wormsmerged)
+summary(model)
+```
+```{r}
+plot(model)
+qqnorm(residuals(model))
+qqline(residuals(model))
+```
+
+```{r}
+kruskal.test(CR_CE_time ~ testing_group, data = wormsmerged)
+```
+```{r}
+ggplot(wormsmerged, aes(x = testing_group, y = CR_CE_time)) +
+  geom_violin() +
+  labs(title = "comparison of time across groups", x = "sediment level", y = "time to reemerge")
+```
+
+```{r}
+pairwise.wilcox.test(wormsmerged$CR_CE_time, wormsmerged$testing_group, p.adjust.method = "bonferroni")
+```
+
+
+```{r}
+wormsmerged$log_CR_CE_time <- log(wormsmerged$CR_CE_time + 1)
+hist(wormsmerged$log_CR_CE_time, xlab = "log-transformed time")
+qqnorm(wormsmerged$log_CR_CE_time)
+qqline(wormsmerged$log_CR_CE_time, col = "red")
+```
+
+```{r}
+wormsmerged$sqrt_CR_CE_time <- sqrt(wormsmerged$CR_CE_time)
+hist(wormsmerged$sqrt_CR_CE_time, xlab = "sqrt-transformed time")
+qqnorm(wormsmerged$sqrt_CR_CE_time)
+qqline(wormsmerged$sqrt_CR_CE_time, col = "red")
+```
+that's a good bell curve:)
+
+```{r}
+wormsmerged$cbrt_CR_CE_time <- wormsmerged$CR_CE_time^(1/3)
+hist(wormsmerged$cbrt_CR_CE_time, xlab = "cbrt-transformed time")
+qqnorm(wormsmerged$cbrt_CR_CE_time)
+qqline(wormsmerged$cbrt_CR_CE_time, col = "red")
+```
+```{r}
+shapiro.test(wormsmerged$cbrt_CR_CE_time)
+```
+ARGH
+
+```{r}
+glm_poisson <- glm(CR_CE_time ~ testing_group, family = poisson(), data = wormsmerged)
+summary(glm_poisson)
+```
+```{r}
+overdispersion <- sum(residuals(glm_poisson, type = "pearson")^2)/df.residual(glm_poisson)
+overdispersion
+```
+okay, overdispersion is present, so use the negative binomial model
+
+```{r}
+glm_neg <- glm.nb(CR_CE_time ~ testing_group, data = wormsmerged)
+summary(glm_neg)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(glm_neg)
+par(mfrow = c(1,1))
+```
+
+```{r}
+wormsmerged$CR_CE_time[wormsmerged$CR_CE_time == 600] <- NA
+print(wormsmerged)
+```
+
+
+```{r}
+hist(wormsmerged$CR_CE_time, xlab = "time")
+```
+
+```{r}
+hist(wormsmerged$CR_CE_time)
+```
+
+

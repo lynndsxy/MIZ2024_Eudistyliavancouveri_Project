@@ -1,0 +1,102 @@
+---
+title: "E.vancouveri Water Turbidity Project"
+author: "Lynndsay Terpsma"
+date: "2024-07-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(naniar)
+library(skimr)
+library(broom)
+library(car)
+```
+
+
+```{r load_data}
+test.data <- read_csv("C:/Users/lterp/Desktop/OneDrive - UBC/2024S/Project/Statistics/Data/worm_data_test.csv")
+```
+```{r}
+glimpse(test.data)
+```
+```{r}
+test.data %>%
+  skim_without_charts
+```
+```{r}
+test.data
+```
+
+
+```{r}
+worm <- test.data %>%
+  mutate(PR_time = as.double(suppressWarnings(as.double(PR_time)))) %>%
+  replace_na(list(PR_time = 0))
+```
+
+```{r}
+worm <- worm %>%
+  mutate(testing_group = recode_factor(testing_group, 
+                                       A1 = "A1", A2 = "A2", A3 = "A3", 
+                                       B1 = "B1", B2 = "B2", B3 = "B3", 
+                                       D1 = "D1", D2 = "D2", D3 = "D3"))
+
+worm
+```
+```{r}
+worm$testing_group
+```
+```{r}
+worm.stats <- worm %>%
+  group_by(testing_group) %>%
+  summarise(
+    Count = n() - naniar::n_miss(CE_time),
+    Count_NA = naniar::n_miss(CE_time),
+    Mean = mean(CE_time, na.rm = TRUE),
+    SD = sd(CE_time, na.rm = TRUE),
+    SEM = SD/sqrt(Count)
+  )
+worm.stats
+```
+
+
+```{r}
+worm.stats2 <- worm %>%
+  group_by(testing_group) %>%
+  summarise(
+    Count = n() - naniar::n_miss(CE_time - CR_time),
+    Count_NA = naniar::n_miss(CE_time - CR_time),
+    Mean = mean((CE_time - CR_time), na.rm = TRUE),
+    SD = sd((CE_time - CR_time), na.rm = TRUE),
+    SEM = SD/sqrt(Count)
+  )
+worm.stats2
+```
+
+```{r}
+kable(worm.stats2, digits = 4)
+```
+
+
+
+```{r}
+worm %>%
+  ggplot(aes(x = testing_group, y = (CE_time - CR_time))) +
+  geom_jitter(colour = "darkgrey", size = 3, shape = 1, width = 0.1) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", 
+    colour = "black", width = 0.1, 
+    position = position_nudge(x = 0.15)) +
+  stat_summary(fun = mean, geom = "point", 
+    colour = "black", size = 3, 
+    position = position_nudge(x = 0.15)) +
+  xlab("Sediment treatment") + 
+  ylab("Time to re-emerge (s)") + 
+  theme_classic()
+```
+
+
+ 
+
+

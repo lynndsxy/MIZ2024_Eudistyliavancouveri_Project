@@ -1,0 +1,376 @@
+---
+title: "worms"
+author: "Lynndsay Terpsma"
+date: "2024-07-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(naniar)
+library(skimr)
+library(broom)
+library(janitor)
+library(googlesheets4)
+library(stats)
+library(jtools)
+library(ggstance)
+library(arm)
+library(pscl)
+library(lme4)
+library(car)
+library(fitdistrplus)
+library(wesanderson)
+```
+
+##WITHOUT DIAMETER MEASUREMENTS
+```{r load_data}
+totalworms <- read_csv("C:/Users/lterp/Desktop/OneDrive - UBC/2024S/Project/Statistics/Data/MIZ_2024_worm_total.csv")
+```
+##VIEW DATA
+
+```{r}
+glimpse(totalworms)
+```
+
+##RECODE DATA - make fctr instead of chr, change names
+
+```{r}
+totalworms <- totalworms %>%
+  mutate(testing_group = recode_factor(testing_group, 
+                                       A1 = "A", A2 = "A", A3 = "A", 
+                                       B1 = "B", B2 = "B", B3 = "B", 
+                                       D1 = "D", D2 = "D", D3 = "D"))
+
+totalworms
+```
+##Stripchart of data without tube diameter
+
+```{r}
+totalworms %>%
+  ggplot(aes(x = testing_group, y = CR_CE_time)) +
+  geom_jitter(colour = "darkgrey", size = 3, shape = 1, width = 0.1) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", 
+    colour = "black", width = 0.1, 
+    position = position_nudge(x = 0.15)) +
+  stat_summary(fun = mean, geom = "point", 
+    colour = "black", size = 3, 
+    position = position_nudge(x = 0.15)) +
+  xlab("Sediment treatment") + 
+  ylab("Time to re-emerge (s)") + 
+  theme_classic()
+```
+##normality check (data without tube diameter)
+
+```{r}
+totalworms %>% 
+ ggplot(aes(sample = CR_CE_time)) +
+  stat_qq(shape = 1, size = 2) +
+  stat_qq_line() +
+  ylab("re-emergence") +
+  xlab("Normal quantile") +
+  theme_bw()
+```
+##normality check (without diameter)
+
+```{r}
+hist(totalworms$CR_CE_time)
+```
+##LN TRANSFORMED DATA
+
+```{r}
+logtotalworms <- totalworms %>%
+  mutate(logCR_CE_time_1 = log(CR_CE_time + 1))
+```
+
+```{r}
+hist(logtotalworms$logCR_CE_time_1)
+```
+##LOG 10 TRANSFORMED DATA
+
+```{r}
+log10totalworms <- totalworms %>%
+  mutate(log10CR_CE_time_1 = log10(CR_CE_time + 1))
+log10totalworms
+```
+
+```{r}
+hist(log10totalworms$log10CR_CE_time_1)
+```
+
+```{r}
+log10totalworms_clean <- log10totalworms %>%
+  filter(!is.na(log10CR_CE_time_1))
+fit_norm <- fitdist(log10totalworms_clean$log10CR_CE_time_1, "norm")
+fit_exp <- fitdist(log10totalworms_clean$log10CR_CE_time_1, "exp")
+```
+
+```{r}
+gof <- gofstat(list(fit_norm, fit_exp))
+print(gof)
+```
+
+```{r}
+plot.legend <- c("normal", "exp")
+denscomp(list(fit_norm, fit_exp), legendtext = plot.legend)
+cdfcomp(list(fit_norm, fit_exp))
+qqcomp(list(fit_norm, fit_exp))
+ppcomp(list(fit_norm, fit_exp))
+```
+
+##ORIGINAL DATA (NOT TRANSFORMED) - without diameter MODEL SELECTION
+
+
+###model 1
+```{r model}
+model <- glmer(CR_CE_time ~ testing_group + (1|worm_code/trial), data = totalworms, family = poisson)
+summary(model)
+confint(model)
+```
+
+```{r}
+plot(residuals(model))
+```
+
+```{r}
+Anova(model)
+```
+
+###model2
+```{r}
+model2 <- glmer(CR_CE_time ~ testing_group + (1|trial), data = totalworms, family = poisson)
+summary(model2)
+```
+###model3
+```{r}
+model3 <- glmer(CR_CE_time ~ testing_group + (1|worm_code), data = totalworms, family = poisson)
+summary(model)
+```
+###model comparison
+```{r}
+MuMIn::model.sel(model, model2, model3)
+```
+
+##Load data with diameter
+```{r}
+wormworm <- read_csv("C:/Users/lterp/Desktop/OneDrive - UBC/2024S/Project/Statistics/Data/MIZ_2024_Worm_Data_total2.csv")
+```
+##recode data with diameter
+```{r}
+wormworm <- wormworm %>%
+  mutate(testing_group = recode_factor(testing_group, 
+                                       A1 = "Control", A2 = "Control", A3 = "Control", 
+                                       B1 = "Moderate", B2 = "Moderate", B3 = "Moderate", 
+                                       D1 = "High", D2 = "High", D3 = "High"))
+
+wormworm
+```
+##MODEL COMPARISON WITH DIAMETER
+
+###model1 - this is the one we reported in the project
+```{r tube_diameter}
+modell1 <- glmer(CR_CE_time ~ testing_group + tube_diameter_cm + (1|worm_code/trial), data = wormworm, family = poisson)
+summary(modell1)
+confint(modell1)
+```
+```{r}
+Anova(modell1)
+```
+
+###estimates of modell1
+```{r estimate_df}
+estimates <- data.frame(
+  testing_group = c("Control", "Moderate", "High"),
+  Estimate = c(4.7231, 4.7231 + (-0.6455), 4.7231 + (-0.6109)),
+  CI_lower = c(4.1838535, 4.7231 + (-1.0326556), 4.7231 + (-1.0108977)),
+  CI_upper = c(5.1910929, 4.7231 + (-0.2535972), 4.7231 + (-0.2071626))
+)
+```
+
+we ran a mixed effects model with random effects for (...), because not normal distribution we specified our distribution (poisson). control from model: 4.7231 [95% CI: 4.1838535 - 5.2517116], B: estimate value [95 CI: 4.7231 + (-1.0326556) - 4.7231 + (-1.0108977)]
+
+```{r}
+print(estimates)
+```
+
+###anova of modell1
+```{r}
+anova_results <- Anova(modell1)
+anova_results
+```
+Anova results - report both. talk about units (seconds)
+
+```{r}
+anova_df <- as.data.frame(anova_results)
+anova_df$Term <- rownames(anova_df)
+anova_df <- anova_df[, c("Term", "Chisq", "Df", "Pr(>Chisq)")]
+rownames(anova_df) <- NULL
+```
+
+```{r, include = FALSE, eval = FALSE}
+anova_ft <- flextable(anova_df)
+anova_ft <- set_caption(anova_ft, "Type II Wald Chi-square ANOVA Results")
+anova_ft <- theme_vanilla(anova_ft)
+anova_ft <- autofit(anova_ft)
+print(anova_ft)
+```
+
+###violinplot of modell1
+
+```{r}
+palette <- wes_palette("Darjeeling1")
+```
+
+
+```{r violin_plot}
+  ggplot() +
+  geom_violin(data = wormworm, aes(x = testing_group, y = log(CR_CE_time), fill = testing_group)) +
+  scale_fill_manual(values = palette) +
+  geom_point(data = estimates, aes(x = testing_group, y = Estimate), colour = "black", size = 2) +
+  geom_errorbar(data = estimates, aes(x = testing_group, ymin = CI_lower, ymax = CI_upper), width = 0.1, colour = "black") +
+  xlab("Sediment Treatment Level") +
+  ylab("Log (ln) Transformed Time to Re-Emerge (s)") +
+  labs(fill = "Sediment Level") +
+  theme_bw()
+```
+
+###model comparison between with and without diameter
+
+```{r}
+MuMIn::model.sel(model, modell1)
+```
+##does trial number effect re-emergence?
+
+```{r trial}
+trialmodel <- glmer(CR_CE_time ~ testing_group + tube_diameter_cm + trial + (1|worm_code), data = wormworm, family = poisson)
+summary(trialmodel)
+confint(trialmodel)
+```
+```{r tube_diameter_histogram}
+ggplot(wormworm, aes(x = tube_diameter_cm)) +
+  geom_histogram(colour = "black", fill = "lightgrey") +
+  labs(x = "Tube Diameter (cm)", y = "Frequency") +
+  theme_bw()
+```
+
+
+
+
+#Partial Retraction
+
+```{r PR_stats}
+PR.stats <- wormworm %>%
+  group_by(testing_group) %>%
+  summarise(
+    Count_PR = n() - naniar::n_miss(PR_Time),
+    .groups = 'drop'
+  ) %>%
+    mutate(
+      Total_count_PR = sum(Count_PR),
+      Relative_freq_PR = Count_PR / Total_count_PR
+  ) 
+
+kable(PR.stats, digits = 4)
+```
+```{r PR_table}
+PR.table <- wormworm %>%
+  group_by(testing_group) %>%
+  summarise(
+    Count_PR = n() - naniar::n_miss(PR_Time),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    Total_count_PR = sum(Count_PR),
+    Relative_freq_PR = Count_PR / Total_count_PR
+  )
+print(PR.table)
+```
+
+```{r PR_sort}
+PR.stats <- wormworm %>%
+  group_by(testing_group) %>%
+  summarise(
+    Count_PR = n() - naniar::n_miss(PR_Time),
+    .groups = 'drop'
+  ) 
+```
+
+
+##Partial retraction contingency table and chi-square test
+```{r}
+contingency_tab_wide <- PR.stats %>%
+  pivot_wider(names_from = testing_group, values_from = Count_PR, values_fill = list(Count_PR = 0))
+print(contingency_tab_wide)
+```
+```{r}
+contingency_matrix <- as.matrix(contingency_tab_wide)
+print(contingency_matrix)
+```
+```{r}
+chi_square <- chisq.test(contingency_matrix)
+print(chi_square)
+```
+
+
+
+
+#Partial Re-emergence
+
+```{r}
+PE.stats <- wormworm %>%
+  group_by(testing_group) %>%
+  summarise(
+    Count_PE = n() - naniar::n_miss(PE_Time),
+    .groups = 'drop'
+    ) %>%
+    mutate(
+      Total_count_PE = sum(Count_PE),
+      Relative_freq_PE = Count_PE / Total_count_PE
+  ) 
+
+kable(PE.stats, digits = 4)
+```
+##Exposed
+
+```{r}
+EX.stats <- wormworm %>%
+  group_by(testing_group) %>%
+  summarise(
+    Count_EX = n() - naniar::n_miss(EX),
+    .groups = 'drop'
+    ) %>%
+    mutate(
+      Total_count_EX = sum(Count_EX),
+      Relative_freq_EX = Count_EX / Total_count_EX
+  ) 
+
+kable(EX.stats, digits = 4)
+```
+##Hidden
+
+```{r}
+HI.stats <- wormworm %>%
+  group_by(testing_group) %>%
+  summarise(
+    Count_HI = n() - naniar::n_miss(HI),
+    .groups = 'drop'
+    ) %>%
+    mutate(
+      Total_count_HI = sum(Count_HI),
+      Relative_freq_HI = Count_HI / Total_count_HI
+  ) 
+
+kable(HI.stats, digits = 4)
+```
+
+
+
+
+
+
+
+
+
+
+

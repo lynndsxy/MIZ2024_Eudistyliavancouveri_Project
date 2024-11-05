@@ -1,0 +1,74 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+**Marine Invertebrate Zoology**
+**The Effects of Water Turbidity on the Re-emergence Behaviour of *Eudistylia vancouveri* **
+
+**Date Created:** July 22, 2024
+
+**Created By:** Lynndsay Terpsma
+
+**Updated:** July 30, 2024
+
+**Updated By:** Lynndsay Terpsma
+
+This project is created in partial requirement of the Marine Invertebrate Zoology course hosted by the Bamfield Marine Science Center. This project was complete by a team of three: Lynndsay Terpsma (UBCO), Finn Grundy (UofC), and Rhys Pfuetzner (UBCV).
+
+This files contains all the components of the data used for statistical analysis for the research project.
+
+**File naming conventions:**
+
+- *Data:* LastName_MIZ-data-contents.file-type
+
+**File units**
+
+- tube_diameter_cm: values entered as centimeters
+
+- behaviour code columns: values entered as seconds
+
+**File columns**
+
+- testing_group: the experimental group that the worm was placed in. A represents the control, B represents the moderate sediment group, D represents the high sediment group. The numbers 1-3 which follows represents what experiment of the treatment group the worm was in (as three experiments were run per day). Groups: A1, A2, A3/B1, B2, B3/D1, D2, D3
+
+- worm_code: the unique code given to each worm based on location of collection. X = BMSC south docks, Y = Island Health dock, Z = West Government dock. The number represents an individual (randomly assigned)
+
+- trial: the day of trials (trials ran for 4 days, therefore there are 4 trials)
+
+- tube_diameter_cm: diameter of the worm tube, measured in cm to two decimal places using calipers
+
+- CR_time: timestamp of complete retraction in seconds
+
+- PR_time: timestamp of partial retraction in seconds
+
+- CE_time: timestamp of complete re-emergence in seconds
+
+- PE_time: timestamp of partial re-emergence in seconds
+
+- HI: categorical variable, used if worm was retracted before and after trials (see ethogram)
+
+- EX: categorical variable, used if worm never retracted during trials (see ethogram)
+
+- CR_CE_time: ((CE_time) - (CR_time)) which represents the total time for the worm to re-emerge from their tube, NA values in this column represent worms that were excluded from analysis due to mortality and species differences
+
+**Ethogram used for data analysis:**
+
+| Behaviour | Behavioural_code | Behavioural_description |
+|-----------|------------------|-------------------------|
+|Complete retracted | CR       | All radioles of the worm are completely hidden within the tube of the worm: No radioles remain outside of the tube|
+| Partial retracted | PR       | Radioles were retracted, but not completely within the tube (some are still visible) |
+| Complete re-emergence | CE   | The entirety of the radioles have been re-exposed after retraction |
+| Partial re-emergence | PE | A partial among of the radioles have been re-exposed after reaction |
+| Hidden | HI | Worm was retracted in tube at the beginning of trials |
+| Exposed | EX | Worm did not retract in response to stimuli at the beginning of the trial |
+
+
+
+
+
+
+
+
+
+

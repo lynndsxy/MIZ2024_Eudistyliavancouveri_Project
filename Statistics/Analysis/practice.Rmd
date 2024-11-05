@@ -1,0 +1,98 @@
+---
+title: "Test"
+author: "Lynndsay Terpsma"
+date: "2024-07-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(naniar)
+library(skimr)
+library(broom)
+library(car)
+```
+
+```{r load_data}
+worm.data <- read_csv("C:/Users/lterp/Desktop/OneDrive - UBC/2024S/Project/Statistics/Data/worm_data_test2.csv")
+```
+
+
+```{r}
+glimpse(worm.data)
+```
+
+
+```{r}
+worm <- worm.data %>%
+  mutate(testing_group = recode_factor(testing_group, 
+                                       A1 = "A1", A2 = "A2", A3 = "A3", 
+                                       B1 = "B1", B2 = "B2", B3 = "B3", 
+                                       D1 = "D1", D2 = "D2", D3 = "D3"))
+
+worm
+```
+
+```{r}
+worm$testing_group
+```
+
+
+```{r}
+worm %>%
+  ggplot(aes(x = testing_group, y = CR_CE_time)) +
+  geom_jitter(colour = "darkgrey", size = 3, shape = 1, width = 0.1) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", 
+    colour = "black", width = 0.1, 
+    position = position_nudge(x = 0.15)) +
+  stat_summary(fun = mean, geom = "point", 
+    colour = "black", size = 3, 
+    position = position_nudge(x = 0.15)) +
+  xlab("Sediment treatment") + 
+  ylab("Time to re-emerge (s)") + 
+  theme_classic()
+```
+
+```{r}
+worm2 <- worm.data %>%
+  mutate(testing_group = recode_factor(testing_group, 
+                                       A1 = "A", A2 = "A", A3 = "A", 
+                                       B1 = "B", B2 = "B", B3 = "B", 
+                                       D1 = "D", D2 = "D", D3 = "D"))
+
+worm2
+```
+
+```{r}
+worm2$testing_group
+```
+
+```{r}
+ggplot(data = worm2, aes(x = CR_CE_time)) +
+  geom_histogram(colour = "black", fill = "lightgrey") +
+  xlab("Treatment") +
+  ylab("reemergence time (s)") +
+  theme_bw()
+```
+
+```{r}
+worm2 %>%
+  ggplot(aes(x = testing_group, y = CR_CE_time)) +
+  geom_jitter(colour = "darkgrey", size = 3, shape = 1, width = 0.1) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", 
+    colour = "black", width = 0.1, 
+    position = position_nudge(x = 0.15)) +
+  stat_summary(fun = mean, geom = "point", 
+    colour = "black", size = 3, 
+    position = position_nudge(x = 0.15)) +
+  xlab("Sediment treatment") + 
+  ylab("Time to re-emerge (s)") + 
+  theme_classic()
+```
+
+
+
+
+
+
