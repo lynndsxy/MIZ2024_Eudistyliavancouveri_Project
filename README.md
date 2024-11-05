@@ -9,7 +9,7 @@
 
 **Updated By:** Lynndsay Terpsma
 
-This project is created in partial requirement of the Marine Invertebrate Zoology course hosted by the Bamfield Marine Science Center in partnership with the University of British Columbia.
+This project is created in partial requirement of the Marine Invertebrate Zoology course hosted by the Bamfield Marine Science Center in partnership with the University of British Columbia (Okanagan and Vancouver campuses) and the University of Calgary.
 
 This files contains all the components of the statistical analysis for the research project.
 
