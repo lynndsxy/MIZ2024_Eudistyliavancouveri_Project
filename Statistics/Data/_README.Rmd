@@ -22,6 +22,8 @@ This files contains all the components of the data used for statistical analysis
 
 - *Data:* LastName_MIZ-data-contents.file-type
 
+- *MIZ_2024_Worm_Data_total2 was the final csv final used for analysis*
+
 **File units**
 
 - tube_diameter_cm: values entered as centimeters
